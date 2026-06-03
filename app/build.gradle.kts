@@ -69,4 +69,6 @@ dependencies {
     // Room용 컴파일러 어노테이션 프로세서
     // (Kotlin 코드를 SQL 쿼리로 변환해주는 도구입니다)
     annotationProcessor(libs.androidx.room.compiler)
+
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 }
