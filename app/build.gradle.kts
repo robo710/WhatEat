@@ -70,5 +70,9 @@ dependencies {
     // (Kotlin 코드를 SQL 쿼리로 변환해주는 도구입니다)
     annotationProcessor(libs.androidx.room.compiler)
 
+    // viewmodel 사용을 위한 의존성
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // 메티리얼 확장 아이콘 라이브러리 추가
+    implementation(libs.androidx.compose.material.icons.extended)
 }
