@@ -2,18 +2,22 @@ package com.example.whateat.presentation.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ContextualFlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -34,7 +38,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,20 +50,24 @@ import androidx.compose.ui.unit.sp
 import com.example.whateat.presentation.component.DevicePreviews
 import com.example.whateat.ui.theme.WhatEatTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RecommendScreen(
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     // 1. 상태 관리
-    var budgetInput by remember { mutableStateOf("") } // 예산 직접 입력 값
-    var selectedWeather by remember { mutableStateOf<String?>(null) } // 선택된 날씨 (Optional)
-    var selectedMood by remember { mutableStateOf<String?>(null) } // 선택된 기분 (Optional)
+    var budgetInput by remember { mutableStateOf("") }
+    var selectedWeather by remember { mutableStateOf<String?>(null) }
+    var selectedMood by remember { mutableStateOf<String?>(null) }
+    var dailyNotesInput by remember { mutableStateOf("") }
 
     val weatherOptions = listOf("☀️ 맑음", "☁️ 흐림", "🌧️ 비", "❄️ 눈")
-    val moodOptions = listOf("🥰 좋음", "😑 평범", "😢 우울", "😮‍💨 피곤")
+    // 💡 "🔥 화남" 기분 옵션 추가
+    val moodOptions = listOf("🥰 좋음", "😑 평범", "😢 우울", "😮‍💨 피곤", "🔥 화남")
 
-    // 🎨 일관된 러블리 핑크 감성 테마 컬러
     val PinkPrimary = Color(0xFFFF6B8B)
     val PinkSecondary = Color(0xFFFFF0F2)
     val TextMain = Color(0xFF332A2B)
@@ -66,11 +78,14 @@ fun RecommendScreen(
         modifier = modifier
             .fillMaxSize()
             .background(color = Color.White)
-            .systemBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                })
+            }
+            .padding(horizontal = 24.dp, vertical = 2.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // 상단 스크롤 가능한 메인 컨텐츠 영역
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -95,7 +110,7 @@ fun RecommendScreen(
             }
 
             // ------------------------------------------
-            // 2. 예산 직접 입력 섹션 (슬라이더 대체)
+            // 2. 예산 직접 입력 섹션
             // ------------------------------------------
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -107,20 +122,38 @@ fun RecommendScreen(
                 OutlinedTextField(
                     value = budgetInput,
                     onValueChange = { input ->
-                        // 숫자만 입력 가능하도록 필터링
                         if (input.all { it.isDigit() }) {
                             budgetInput = input
                         }
                     },
-                    placeholder = { Text("예: 12000", color = TextSub.copy(alpha = 0.6f)) },
-                    suffix = { Text("원 이하", fontWeight = FontWeight.Bold, color = TextMain) },
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = TextMain,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    placeholder = {
+                        Text("예: 12000", color = TextSub.copy(alpha = 0.5f), fontSize = 16.sp)
+                    },
+                    suffix = {
+                        Text(
+                            text = "원 이하",
+                            fontWeight = FontWeight.Bold,
+                            color = PinkPrimary,
+                            fontSize = 14.sp
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PinkPrimary,
                         unfocusedBorderColor = BorderColor,
-                        cursorColor = PinkPrimary
+                        cursorColor = PinkPrimary,
+                        focusedTextColor = TextMain,
+                        unfocusedTextColor = TextMain
                     ),
                     singleLine = true
                 )
@@ -148,7 +181,7 @@ fun RecommendScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (isSelected) PinkPrimary else PinkSecondary.copy(alpha = 0.5f))
                                 .clickable {
-                                    // 이미 선택된 걸 또 누르면 선택 해제(Optional), 아니면 새롭게 선택
+                                    focusManager.clearFocus()
                                     selectedWeather = if (isSelected) null else weather
                                 }
                                 .padding(vertical = 12.dp),
@@ -175,18 +208,25 @@ fun RecommendScreen(
                     fontWeight = FontWeight.Bold,
                     color = TextMain
                 )
-                Row(
+
+                // 💡 Row 대신 FlowRow를 사용하여 기분이 5개로 늘어나도 기기 크기에 맞춰 예쁘게 줄바꿈되도록 처리
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    maxItemsInEachRow = 3 // 한 줄에 최대 3개씩 균형감 있게 배치
                 ) {
                     moodOptions.forEach { mood ->
                         val isSelected = selectedMood == mood
                         Box(
                             modifier = Modifier
-                                .weight(1f)
+                                // FlowRow 내에서 고정 너비 비율 분할을 위해 명시적 처리 대신
+                                // 유동적인 패딩 스타일을 취하거나, 한 행당 3개 균등 정렬을 위해 0.31f 가중치 부여 가능
+                                .fillMaxWidth(0.30f)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (isSelected) PinkPrimary else PinkSecondary.copy(alpha = 0.5f))
                                 .clickable {
+                                    focusManager.clearFocus()
                                     selectedMood = if (isSelected) null else mood
                                 }
                                 .padding(vertical = 12.dp),
@@ -203,11 +243,58 @@ fun RecommendScreen(
                 }
             }
 
+            // ------------------------------------------
+            // 5. 오늘의 입맛/특이사항 섹션 (Optional)
+            // ------------------------------------------
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "오늘따라 이런 게 당기네 (선택)",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextMain
+                )
+                OutlinedTextField(
+                    value = dailyNotesInput,
+                    onValueChange = { dailyNotesInput = it },
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = TextMain,
+                        fontSize = 15.sp
+                    ),
+                    placeholder = {
+                        Text(
+                            text = "예: 매콤한 게 당김, 밀가루는 싫어요, 일식이 좋음",
+                            color = TextSub.copy(alpha = 0.5f),
+                            fontSize = 14.sp
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                        }
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PinkPrimary,
+                        unfocusedBorderColor = BorderColor,
+                        cursorColor = PinkPrimary,
+                        focusedTextColor = TextMain,
+                        unfocusedTextColor = TextMain
+                    ),
+                    singleLine = true
+                )
+            }
+
             Divider(color = BorderColor)
 
-            // 5. 대기 상태 카드
+            // 6. 대기 상태 카드
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
+                    .padding(bottom = 10.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = PinkSecondary),
             ) {
@@ -230,10 +317,12 @@ fun RecommendScreen(
             }
         }
 
-        // 6. 하단 고정 추천받기 버튼 영역
+        // 7. 하단 고정 추천받기 버튼 영역
         Button(
             onClick = {
-                // TODO: budgetInput, selectedWeather, selectedMood 데이터를 실시간 취합하여 AI 비서 호출 예정
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                // TODO: budgetInput, selectedWeather, selectedMood, dailyNotesInput 취합하여 AI API 연동
             },
             modifier = Modifier
                 .fillMaxWidth()
